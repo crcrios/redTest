@@ -1,14 +1,41 @@
 #!/bin/bash
-curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
-chmod +x ./kubectl
-sudo mv ./kubectl /usr/local/bin/kubectl
-sudo apt-get update && sudo apt-get install docker.io -y
+
+# Configuring DNS
+AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+AWS_INSTANCE_PUBLIC_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+echo --------------INFO--------------
+echo AWS_INSTANCE_ID $AWS_INSTANCE_ID
+echo AWS_INSTANCE_PUBLIC_IP $AWS_INSTANCE_PUBLIC_IP
+echo ----------SETTING DNS-----------
+aws sns publish --topic-arn "arn:aws:sns:us-east-1:763669947983:Route53SNS" --message '{"EC2InstanceIP": "'"$AWS_INSTANCE_PUBLIC_IP"'", "AccountId": "127981432191", "EC2InstanceId": "'"$AWS_INSTANCE_ID"'", "RecordName": "red-test-interoperabilidad-dev.apps.ambientesbc.com", "Event": "ec2:EC2_INSTANCE_LAUNCH", "Public": "true"}' --region "us-east-1"
 
 
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+# curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+# chmod +x ./kubectl
+# sudo mv ./kubectl /usr/local/bin/kubectl
+
+sudo yum install git -y
+sudo yum install docker 19.03 -y
+
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+sudo yum install -y kubectl 
+sudo yum update -y
+
+# curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+# chmod +x minikube
+# sudo mv minikube /usr/local/bin/
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
+sudo cp minikube /usr/local/bin && rm minikube
 minikube version
-sudo apt install conntrack
-
+sudo yum install conntrack -y
 
 wget https://dl.google.com/go/go1.16.3.linux-amd64.tar.gz -O go1.16.3.linux-amd64.tar.gz
 rm -rf /usr/local/go && tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz
@@ -21,15 +48,6 @@ cd qr-dech-chaincode
 go mod vendor
 cd ..
 
-
-# Configuring DNS
-AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-AWS_INSTANCE_PUBLIC_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-echo --------------INFO--------------
-echo AWS_INSTANCE_ID $AWS_INSTANCE_ID
-echo AWS_INSTANCE_PUBLIC_IP $AWS_INSTANCE_PUBLIC_IP
-echo ----------SETTING DNS-----------
-aws sns publish --topic-arn "arn:aws:sns:us-east-1:763669947983:Route53SNS" --message '{"EC2InstanceIP": "'"$AWS_INSTANCE_PUBLIC_IP"'", "AccountId": "127981432191", "EC2InstanceId": "'"$AWS_INSTANCE_ID"'", "RecordName": "red-test-interoperabilidad-dev.apps.ambientesbc.com", "Event": "ec2:EC2_INSTANCE_LAUNCH", "Public": "true"}' --region "us-east-1"
 
 # git clone https://github.com/crcrios/redTest.git
 
